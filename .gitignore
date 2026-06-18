@@ -4,6 +4,12 @@ cook-agent/src/main/resources/application-local.yml
 # === Runtime Data ===
 cook-agent/chat-memory/
 
+# === Project Config & Docs (not for public repo) ===
+.claude/
+CLAUDE.md
+docs/
+CookLikeHOC/
+
 # === IDE ===
 .idea/
 .vscode/
