@@ -1,0 +1,86 @@
+# ============================================================
+# CookLikeHOC 厨师 Agent 应用配置
+# ============================================================
+
+server:
+  port: 8088
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: cook-agent
+  profiles:
+    active: local
+    include: rag
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# springdoc-openapi 配置
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.fontal.cookagent.controller
+
+# Knife4j 增强配置
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    enable-footer: false
+
+# 日志
+logging:
+  level:
+    root: INFO
+    com.fontal.cookagent: DEBUG
+
+# CookLikeHOC 业务配置
+cook:
+  chat:
+    memory:
+      storage-path: ${COOK_MEMORY_PATH:./chat-memory}
+      eviction-days: 7
+  cache:
+    redis:
+      enable: false
+      ttl-seconds: 3600
+    caffeine:
+      max-size: 1000
+      expire-after-write-seconds: 3600
+
+
+#spring:
+#  # MySQL 数据源配置
+#  datasource:
+#    url: jdbc:mysql://localhost:3306/cook_like_hoc?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+#    username: ${MYSQL_USER:XXX}
+#    password: ${MYSQL_PASSWORD:XXX}
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#
+#  # Spring AI DeepSeek 配置（OpenAI 兼容）
+#  ai:
+#    openai:
+#      api-key: ${DEEPSEEK_API_KEY:your-deepseek-api-key}
+#      base-url: https://api.deepseek.com
+#      chat:
+#        options:
+#          model: deepseek-chat
+#          temperature: 0.8

@@ -1,0 +1,32 @@
+# === API Keys & Secrets ===
+cook-agent/src/main/resources/application-local.yml
+
+# === Runtime Data ===
+cook-agent/chat-memory/
+
+# === IDE ===
+.idea/
+.vscode/
+*.iml
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Build ===
+cook-agent/target/
+cook-agent/logs/
+*.log
+
+# === Maven ===
+cook-agent/mvnw.cmd
+cook-agent/mvnw
+cook-agent/.mvn/
+
+# === Python ===
+__pycache__/
+*.pyc
+
+# === Environment ===
+.env
+*.env.local

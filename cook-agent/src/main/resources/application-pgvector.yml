@@ -1,0 +1,50 @@
+# ============================================================
+# pgvector profile — 双数据源配置
+#   - 主数据源：MySQL（菜品结构化数据：category/recipe/ingredient）
+#   - 向量数据源：PostgreSQL + PGVector（菜谱向量检索）
+# ============================================================
+spring:
+  # 主数据源 — MySQL（MyBatis-Plus 业务表）
+  datasource:
+    url: jdbc:mysql://localhost:3306/cook_like_hoc?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Spring AI DeepSeek 配置（OpenAI 兼容）
+  ai:
+    openai:
+      api-key: ${DEEPSEEK_API_KEY}
+      base-url: https://api.deepseek.com
+      chat:
+        options:
+          model: deepseek-chat
+      # embedding 由 ZhipuAiEmbeddingConfig @Primary 提供，不走 OpenAI
+
+    # PGVector 向量存储配置（使用独立的 PostgreSQL 数据源）
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1024
+        max-document-batch-size: 10000
+        initialize-schema: false
+        remove-existing-vector-store-table: false
+        # 独立数据源配置，不与主 MySQL 数据源冲突
+        datasource:
+          url: jdbc:postgresql://localhost:5432/cook_like_hoc
+          username: ${PG_USER:postgres}
+          password: ${PG_PASSWORD:postgres}
+          driver-class-name: org.postgresql.Driver
+
+# 智谱 AI Embedding-3 配置
+cook:
+  rag:
+    zhipu:
+      api-key: ${ZHIPU_API_KEY}
+      embedding-model: embedding-3
+      dimensions: 1024
+  pexels:
+    api-key: ${PEXELS_API_KEY}
+  search:
+    api-key: ${VOLCANO_SEARCH_API_KEY}
