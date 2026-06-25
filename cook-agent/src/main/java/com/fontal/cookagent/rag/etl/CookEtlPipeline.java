@@ -33,7 +33,23 @@ public class CookEtlPipeline {
 
     /** 执行完整 ETL 管线：Load → Split → Enrich → Store */
     public void run() {
-        log.info("=== RAG ETL Pipeline Started ===");
+        run(false);
+    }
+
+    /**
+     * 执行 ETL 管线；{@code rebuild=true} 时先清空向量库再做全量导入。
+     */
+    public void run(boolean rebuild) {
+        log.info("=== RAG ETL Pipeline Started (rebuild={}) ===", rebuild);
+
+        if (rebuild) {
+            try {
+                vectorStore.delete(java.util.List.of());
+                log.info("已清空向量库");
+            } catch (Exception e) {
+                log.warn("清空向量库失败，将直接 add: {}", e.getMessage());
+            }
+        }
 
         // 1. Load — 从文件系统加载 Markdown 文档
         List<Document> rawDocuments = documentReader.loadAll();
@@ -43,13 +59,9 @@ public class CookEtlPipeline {
         List<Document> chunks = textSplitter.apply(rawDocuments);
         log.info("[2/4] Split into {} chunks", chunks.size());
 
-//        // 3. Enrich — AI 摘要生成（耗时长，暂时跳过）
-//        List<Document> enriched = summaryEnricher.apply(chunks);
-//        log.info("[3/4] Enriched {} documents with AI summaries", enriched.size());
-
-        // 4. Store — 向量化并写入 VectorStore
+        // 3. Store — 向量化并写入 VectorStore
         vectorStore.add(chunks);
-        log.info("[4/4] Stored {} documents into vector store (enrich skipped)", chunks.size());
+        log.info("[3/4] Stored {} documents into vector store", chunks.size());
 
         log.info("=== RAG ETL Pipeline Completed ===");
     }

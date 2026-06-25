@@ -14,7 +14,7 @@ spring:
   # Spring AI DeepSeek 配置（OpenAI 兼容）
   ai:
     openai:
-      api-key: ${DEEPSEEK_API_KEY}
+      api-key: ${DEEPSEEK_API_KEY:}
       base-url: https://api.deepseek.com
       chat:
         options:
@@ -41,10 +41,10 @@ spring:
 cook:
   rag:
     zhipu:
-      api-key: ${ZHIPU_API_KEY}
+      api-key: ${ZHIPU_API_KEY:}
       embedding-model: embedding-3
       dimensions: 1024
   pexels:
-    api-key: ${PEXELS_API_KEY}
+    api-key: ${PEXELS_API_KEY:}
   search:
-    api-key: ${VOLCANO_SEARCH_API_KEY}
+    api-key: ${VOLCANO_SEARCH_API_KEY:}

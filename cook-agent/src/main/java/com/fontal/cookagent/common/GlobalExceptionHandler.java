@@ -1,14 +1,19 @@
 package com.fontal.cookagent.common;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+import java.util.stream.Collectors;
 
 /**
  * 全局异常处理器 — 统一返回 ErrorResponse JSON 格式。
@@ -57,6 +62,30 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(ErrorCode.PARAM_INVALID,
                         "参数 " + ex.getName() + " 类型错误",
                         HttpStatus.BAD_REQUEST));
+    }
+
+    /** @Valid 校验失败（@RequestBody） */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+        String errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        log.warn("参数校验失败: {}", errors);
+        return ResponseEntity
+                .badRequest()
+                .body(ErrorResponse.of(ErrorCode.VALIDATION_ERROR, errors, HttpStatus.BAD_REQUEST));
+    }
+
+    /** 方法级校验失败（@Validated on controller） */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
+        String errors = ex.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining("; "));
+        log.warn("参数校验失败: {}", errors);
+        return ResponseEntity
+                .badRequest()
+                .body(ErrorResponse.of(ErrorCode.VALIDATION_ERROR, errors, HttpStatus.BAD_REQUEST));
     }
 
     /** 资源不存在（Spring 默认 404 处理） */

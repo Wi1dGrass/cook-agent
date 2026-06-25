@@ -120,6 +120,23 @@ CREATE TABLE IF NOT EXISTS `daily_recommend` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='每日推荐表';
 
 -- ============================================================
+-- 8. 查询历史表（扩展）
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `chat_history` (
+    `id`             BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `user_id`        BIGINT       NOT NULL COMMENT '用户ID',
+    `conversation_id` VARCHAR(64)  NOT NULL COMMENT '对话ID',
+    `query`          VARCHAR(1024) NOT NULL COMMENT '用户提问',
+    `reply`          MEDIUMTEXT   DEFAULT NULL COMMENT 'AI 回复',
+    `channel`        VARCHAR(32)  DEFAULT 'CHAT' COMMENT '来源：CHAT/AGENT',
+    `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX `idx_user_id` (`user_id`),
+    INDEX `idx_conversation_id` (`conversation_id`),
+    CONSTRAINT `fk_history_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='查询历史表';
+
+-- ============================================================
 -- 初始化分类数据
 -- ============================================================
 INSERT INTO `category` (`name`, `dir_name`, `sort_order`) VALUES

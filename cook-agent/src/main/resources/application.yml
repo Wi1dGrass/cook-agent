@@ -60,11 +60,21 @@ cook:
       eviction-days: 7
   cache:
     redis:
-      enable: false
+      enable: true
       ttl-seconds: 3600
     caffeine:
       max-size: 1000
       expire-after-write-seconds: 3600
+  # JWT 鉴权配置
+  security:
+    jwt:
+      secret: ${COOK_JWT_SECRET:Y29va2xpa2Vob2MtcmVjaXBlLWFnZW50LXNlY3JldC1rZXktMjAyNi1mb250YWw=}
+      access-token-ttl-minutes: 120
+      issuer: cook-agent
+  # 定时同步配置
+  sync:
+    enabled: false
+    cron: "0 0 3 * * MON"
 
 
 #spring:

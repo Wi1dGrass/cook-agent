@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,8 +25,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * ChatController 单元测试 — 使用 pgvector profile + Mockito。
  */
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("pgvector")
+@TestPropertySource(properties = {
+        "DEEPSEEK_API_KEY=test-key",
+        "ZHIPU_API_KEY=test-key",
+        "PEXELS_API_KEY=test-key",
+        "VOLCANO_SEARCH_API_KEY=test-key"
+})
 class ChatControllerTest {
 
     @Autowired

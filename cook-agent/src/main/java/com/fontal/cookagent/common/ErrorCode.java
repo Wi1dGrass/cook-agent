@@ -21,6 +21,12 @@ public enum ErrorCode {
     SEARCH_UNAVAILABLE("SEARCH_UNAVAILABLE", "搜索服务暂不可用"),
     SEARCH_NO_RESULTS("SEARCH_NO_RESULTS", "未找到搜索结果"),
 
+    // ===== 限流 =====
+    RATE_LIMITED("RATE_LIMITED", "请求过于频繁，请稍后重试"),
+
+    // ===== 校验 =====
+    VALIDATION_ERROR("VALIDATION_ERROR", "参数校验不通过"),
+
     ;
 
     private final String code;
