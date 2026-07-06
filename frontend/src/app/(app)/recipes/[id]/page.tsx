@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Markdown } from "@/components/common/markdown";
 import { FavoriteButton } from "@/components/recipe/favorite-button";
-import { parseNutrition } from "@/lib/utils/format";
+import { parseNutrition, resolveImageUrl } from "@/lib/utils/format";
+import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/errors";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,18 @@ export default async function RecipeDetailPage({ params }: PageProps) {
         返回菜谱列表
       </Link>
 
-      <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      {detail.imageUrl && (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-border/60 shadow-sm">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={resolveImageUrl(detail.imageUrl) ?? ""}
+            alt={detail.name}
+            className="mx-auto h-full max-h-72 w-full object-cover"
+          />
+        </div>
+      )}
+
+      <div className={cn("flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between", detail.imageUrl ? "mt-6" : "mt-4")}>
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">{detail.name}</h1>

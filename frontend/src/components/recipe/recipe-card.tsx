@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { UtensilsCrossed } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { truncate } from "@/lib/utils/format";
+import { truncate, resolveImageUrl } from "@/lib/utils/format";
 import type { RecipeSummary } from "@/lib/api/types";
 
 export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
@@ -14,7 +14,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
           {recipe.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={recipe.imageUrl}
+              src={resolveImageUrl(recipe.imageUrl) ?? ""}
               alt={recipe.name}
               loading="lazy"
               className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]"

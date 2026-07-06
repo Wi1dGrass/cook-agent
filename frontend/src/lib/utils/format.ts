@@ -24,3 +24,14 @@ export function parseNutrition(json?: string | null): Record<string, string> | n
     return null;
   }
 }
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8088/api";
+
+export function resolveImageUrl(url?: string | null): string | null {
+  if (!url) return null;
+  if (url.startsWith("images/") || url.startsWith("/images/")) {
+    return `${API_BASE}/${url.replace(/^\//, "")}`;
+  }
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${API_BASE}/${url.replace(/^\//, "")}`;
+}

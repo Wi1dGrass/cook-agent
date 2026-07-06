@@ -39,8 +39,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/doc.html", "/swagger-ui/**", "/v3/api-docs/**",
                                 "/webjars/**", "/favicon.ico", "/error").permitAll()
-                        // 健康检查放行
-                        .requestMatchers("/health", "/health/**").permitAll()
+                        // 健康检查 + 静态图片资源放行
+                        .requestMatchers("/health", "/health/**", "/images/**").permitAll()
                         // 公开端点：登录/注册
                         .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login").permitAll()
                         // 所有 GET 查询端点放行（菜谱检索、Agent SSE 对话等公开服务）
