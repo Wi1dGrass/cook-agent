@@ -36,20 +36,20 @@ export function AppHeader() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/70 bg-background/70 px-3 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50">
       <SidebarTrigger className="cursor-pointer" />
       <div className="flex-1" />
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5">
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/50 px-2.5 py-1">
           <span
             className={cn(
-              "inline-block size-2 rounded-full",
-              health === "up" && "bg-emerald-500",
+              "inline-block size-2 rounded-full transition-colors",
+              health === "up" && "bg-emerald-500 shadow-[0_0_8px] shadow-emerald-500/60",
               health === "down" && "bg-destructive",
               health === "checking" && "bg-muted-foreground animate-pulse"
             )}
           />
-          <Activity className="size-3.5 hidden sm:inline" />
+          <Activity className="size-3 hidden sm:inline" />
           <span className="hidden sm:inline">
             {health === "up" ? "服务正常" : health === "down" ? "服务离线" : "检测中"}
           </span>

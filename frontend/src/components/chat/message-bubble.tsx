@@ -24,14 +24,14 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className={cn("flex gap-3 px-4 py-5", isUser && "flex-row-reverse")}
+      className={cn("group flex gap-3 px-4 py-4", isUser && "flex-row-reverse")}
     >
       <div
         className={cn(
-          "flex size-8 shrink-0 items-center justify-center rounded-full",
+          "flex size-8 shrink-0 items-center justify-center rounded-full shadow-sm",
           isUser
-            ? "bg-secondary text-secondary-foreground"
-            : "bg-primary text-primary-foreground"
+            ? "bg-secondary text-secondary-foreground ring-1 ring-border"
+            : "bg-gradient-to-br from-primary to-primary/75 text-primary-foreground"
         )}
         aria-hidden
       >
@@ -42,8 +42,8 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
           className={cn(
             "rounded-2xl px-4 py-3 text-sm",
             isUser
-              ? "bg-primary text-primary-foreground inline-block text-left"
-              : "bg-card border border-border"
+              ? "bg-primary text-primary-foreground inline-block text-left rounded-tr-md shadow-sm"
+              : "bg-card border border-border rounded-tl-md"
           )}
         >
           {isUser ? (
@@ -59,13 +59,14 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
           )}
         </div>
         {!isUser && message.steps && message.steps.length > 0 && (
-          <details className="mt-2 group">
-            <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors select-none">
+          <details className="mt-2 group/details">
+            <summary className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors select-none">
+              <span className="flex size-1.5 rounded-full bg-primary/60" />
               Agent 执行步骤（{message.steps.length}）
             </summary>
-            <ol className="mt-2 space-y-1.5 text-xs text-muted-foreground font-mono">
+            <ol className="mt-2 space-y-1.5 border-l-2 border-primary/20 pl-3 text-xs text-muted-foreground font-mono">
               {message.steps.map((step, i) => (
-                <li key={i} className="rounded-md bg-muted/50 px-2 py-1.5 break-words">
+                <li key={i} className="rounded-md bg-muted/40 px-2.5 py-1.5 break-words">
                   {step}
                 </li>
               ))}

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { Flame, Carrot, CalendarDays, Apple } from "lucide-react";
+import { Flame, Carrot, CalendarDays, Apple, Plus } from "lucide-react";
 
 import { useChatStore, uid } from "@/lib/store/chat-store";
 import { chatNew, chatSend } from "@/lib/api/chat";
@@ -73,15 +73,18 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-[calc(100svh-3.5rem)] flex-col">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2">
-        <h1 className="text-sm font-medium">
-          AI 对话 {conversationId && <span className="text-muted-foreground">· RAG 检索增强</span>}
+      <div className="flex items-center justify-between border-b border-border/70 bg-background/40 px-4 py-2.5 backdrop-blur">
+        <h1 className="flex items-center gap-2 text-sm font-medium">
+          <span className="flex size-1.5 rounded-full bg-primary/70" />
+          AI 对话
+          {conversationId && <span className="text-muted-foreground">· RAG 检索增强</span>}
         </h1>
         {messages.length > 0 && (
           <button
             onClick={handleNewChat}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/50 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors cursor-pointer"
           >
+            <Plus className="size-3" />
             新对话
           </button>
         )}

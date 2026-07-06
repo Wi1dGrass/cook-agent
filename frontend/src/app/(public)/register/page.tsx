@@ -55,13 +55,17 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm">
+    <main className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden px-6 py-12">
+      <div className="pointer-events-none absolute inset-0 -z-20 bg-grid opacity-50" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[50vh] bg-[radial-gradient(60%_50%_at_50%_0%,color-mix(in_srgb,var(--ai)_20%,transparent),transparent)]" />
+      <div className="w-full max-w-sm animate-fade-up">
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <div className="flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm">
             <ChefHat className="size-6" />
           </div>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight">注册 CookManus</h1>
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight">
+            注册 <span className="text-gradient-ai">CookManus</span>
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">新用户默认角色：厨师</p>
         </div>
 
@@ -106,7 +110,7 @@ export default function RegisterPage() {
               <p className="text-xs text-destructive">{errors.phone.message}</p>
             )}
           </div>
-          <Button type="submit" className="w-full cursor-pointer" disabled={isSubmitting}>
+          <Button type="submit" className="w-full cursor-pointer glow-ai" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="size-4 animate-spin" />}
             注册
           </Button>

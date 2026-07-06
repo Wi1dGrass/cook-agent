@@ -43,11 +43,12 @@ export function ChatInput({
   }
 
   return (
-    <div className="border-t border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto w-full max-w-3xl px-4 py-3">
+    <div className="relative border-t border-border bg-gradient-to-b from-background/60 to-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <div className="mx-auto w-full max-w-3xl px-4 py-3.5">
         <div
           className={cn(
-            "relative flex items-end gap-2 rounded-2xl border border-border bg-card p-2 transition-colors focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15"
+            "relative flex items-end gap-2 rounded-2xl border border-border bg-card/80 p-2 shadow-sm transition-all backdrop-blur",
+            "focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10"
           )}
         >
           <textarea
@@ -63,7 +64,10 @@ export function ChatInput({
           />
           <Button
             size="icon"
-            className="size-9 shrink-0 cursor-pointer rounded-xl"
+            className={cn(
+              "size-9 shrink-0 cursor-pointer rounded-xl transition-all",
+              value.trim() && !disabled && !loading && "glow-ai"
+            )}
             onClick={submit}
             disabled={!value.trim() || disabled || loading}
             aria-label="发送"
@@ -71,7 +75,7 @@ export function ChatInput({
             {loading ? <Loader2 className="size-4 animate-spin" /> : <ArrowUp className="size-4" />}
           </Button>
         </div>
-        <p className="mt-1.5 text-center text-xs text-muted-foreground">
+        <p className="mt-2 text-center text-xs text-muted-foreground/70">
           Enter 发送 · Shift+Enter 换行
         </p>
       </div>

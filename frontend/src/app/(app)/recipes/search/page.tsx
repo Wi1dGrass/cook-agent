@@ -92,7 +92,13 @@ function SearchPageInner() {
           {searchQ.isFetching && (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="aspect-[4/3] animate-pulse rounded-xl bg-muted" />
+                <div key={i} className="overflow-hidden rounded-xl border border-border">
+                  <div className="aspect-[4/3] shimmer bg-muted" />
+                  <div className="space-y-2 p-3.5">
+                    <div className="h-4 w-3/4 rounded shimmer bg-muted" />
+                    <div className="h-3 w-1/2 rounded shimmer bg-muted" />
+                  </div>
+                </div>
               ))}
             </div>
           )}
