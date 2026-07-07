@@ -3,6 +3,7 @@ package com.fontal.cookagent.rag.etl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -17,6 +18,9 @@ public class EtlPipelineRunner implements ApplicationRunner {
 
     private final CookEtlPipeline etlPipeline;
 
+    @Value("${cook.rag.etl.auto-startup:true}")
+    private boolean autoStartup;
+
     @Autowired(required = false)
     private JdbcTemplate jdbcTemplate;
 
@@ -26,9 +30,14 @@ public class EtlPipelineRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        if (!autoStartup) {
+            log.info("RAG ETL auto-startup disabled (cook.rag.etl.auto-startup=false), skipping. Use POST /api/rag/etl/run to import manually.");
+            return;
+        }
+
         // PGVector 已有数据则跳过导入
         if (jdbcTemplate != null && hasExistingData()) {
-            log.info("PGVector already has data, skipping ETL. Use POST /api/rag/etl/run to re-import.");
+            log.info("Vector store already has data, skipping ETL. Use POST /api/rag/etl/run to re-import.");
             return;
         }
 

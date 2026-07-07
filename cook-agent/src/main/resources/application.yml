@@ -15,7 +15,7 @@ spring:
   application:
     name: cook-agent
   profiles:
-    active: local
+    active: pgvector
     include: local
   web:
     resources:
@@ -24,7 +24,8 @@ spring:
         - classpath:/resources/
         - classpath:/static/
         - classpath:/public/
-        - file:../CookLikeHOC/
+        # /images/** 由 CorsConfig.addResourceHandlers 用绝对路径注册
+        # （避免 file:../ 触发 Spring 6.x 路径穿越安全检查）
 
   # MySQL 数据源（密码等敏感信息见 application-local.yml）
   datasource:
@@ -111,6 +112,11 @@ cook:
   # RAG 管线配置（所有 profile 共享）
   rag:
     document-root: ${COOK_DOC_ROOT:../CookLikeHOC}
+    # ETL 启动时自动导入开关：
+    #   true  — 每次启动重新导入（SimpleVectorStore 内存场景默认）
+    #   false — 跳过启动 ETL，改用 POST /api/rag/etl/run 手动触发
+    etl:
+      auto-startup: true
     token-splitter:
       chunk-size: 800
       min-chunk-size-chars: 350
