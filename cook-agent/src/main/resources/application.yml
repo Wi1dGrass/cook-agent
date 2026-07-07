@@ -1,5 +1,9 @@
 # ============================================================
 # CookLikeHOC 厨师 Agent 应用配置
+#   - 基础配置（active）：server / mybatis / springdoc / cook 业务 / RAG / 本地数据源
+#   - 敏感信息（密码、API Key）统一放在 application-local.yml（git-ignored）
+#   - application-local.yml 通过 spring.profiles.include 始终加载
+#   - PGVector 生产配置见文件末尾 profile 文档（pgvector 激活时生效）
 # ============================================================
 
 server:
@@ -12,7 +16,7 @@ spring:
     name: cook-agent
   profiles:
     active: local
-    include: rag
+    include: local
   web:
     resources:
       static-locations:
@@ -21,6 +25,26 @@ spring:
         - classpath:/static/
         - classpath:/public/
         - file:../CookLikeHOC/
+
+  # MySQL 数据源（密码等敏感信息见 application-local.yml）
+  datasource:
+    url: jdbc:mysql://localhost:3306/cook_like_hoc?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Spring AI DeepSeek 配置（OpenAI 兼容；API Key 见 application-local.yml）
+  ai:
+    openai:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: https://api.deepseek.com
+      chat:
+        options:
+          model: deepseek-chat
+          temperature: 0.8
+      embedding:
+        options:
+          model: deepseek-embedding
 
 # MyBatis-Plus 配置
 mybatis-plus:
@@ -84,21 +108,56 @@ cook:
     enabled: false
     cron: "0 0 3 * * MON"
 
+  # RAG 管线配置（所有 profile 共享）
+  rag:
+    document-root: ${COOK_DOC_ROOT:../CookLikeHOC}
+    token-splitter:
+      chunk-size: 800
+      min-chunk-size-chars: 350
+      min-chunk-length-to-embed: 10
+      max-num-chunks: 5000
+      keep-separator: true
+    retrieval:
+      top-k: 5
+      similarity-threshold: 0.50
 
-#spring:
-#  # MySQL 数据源配置
-#  datasource:
-#    url: jdbc:mysql://localhost:3306/cook_like_hoc?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-#    username: ${MYSQL_USER:XXX}
-#    password: ${MYSQL_PASSWORD:XXX}
-#    driver-class-name: com.mysql.cj.jdbc.Driver
-#
-#  # Spring AI DeepSeek 配置（OpenAI 兼容）
-#  ai:
-#    openai:
-#      api-key: ${DEEPSEEK_API_KEY:your-deepseek-api-key}
-#      base-url: https://api.deepseek.com
-#      chat:
-#        options:
-#          model: deepseek-chat
-#          temperature: 0.8
+  # 第三方 API Key（敏感信息见 application-local.yml）
+  pexels:
+    api-key: ${PEXELS_API_KEY:}
+  search:
+    api-key: ${VOLCANO_SEARCH_API_KEY:}
+
+
+# ============================================================
+# PGVector 生产环境配置（仅当 active profile 包含 pgvector 时生效）
+#   使用：将 spring.profiles.active 改为 pgvector（local 会自动 include）
+#   密钥 PG_PASSWORD / ZHIPU_API_KEY 放在 application-local.yml
+# ============================================================
+---
+spring:
+  config:
+    activate:
+      on-profile: pgvector
+  ai:
+    # PGVector 向量存储（使用独立的 PostgreSQL 数据源，不与主 MySQL 冲突）
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1024
+        max-document-batch-size: 10000
+        initialize-schema: false
+        remove-existing-vector-store-table: false
+        datasource:
+          url: jdbc:postgresql://localhost:5432/cook_like_hoc
+          username: ${PG_USER:postgres}
+          password: ${PG_PASSWORD:}
+          driver-class-name: org.postgresql.Driver
+    # embedding 由 ZhipuAiEmbeddingConfig @Primary 提供，不走 OpenAI
+
+cook:
+  rag:
+    zhipu:
+      api-key: ${ZHIPU_API_KEY:}
+      embedding-model: embedding-3
+      dimensions: 1024
