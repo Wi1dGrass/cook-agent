@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, User, Loader2 } from "lucide-react";
+import { Bot, User, Loader2, SkipForward } from "lucide-react";
 import { Markdown } from "@/components/common/markdown";
+import { useTypewriter } from "@/hooks/use-typewriter";
+import { useChatStore } from "@/lib/store/chat-store";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/lib/store/chat-store";
 
@@ -14,6 +16,44 @@ function TypingDots() {
       <span className="typing-dot size-1.5 rounded-full bg-muted-foreground" />
       <span className="typing-dot size-1.5 rounded-full bg-muted-foreground" />
     </span>
+  );
+}
+
+function AssistantContent({ message }: { message: ChatMessage }) {
+  const finishStreaming = useChatStore((s) => s.finishStreaming);
+  const isStreaming = !!message.streaming;
+
+  const { displayed, done, skip } = useTypewriter(message.content, {
+    enabled: isStreaming,
+    speed: 16,
+    onDone: () => {
+      if (isStreaming) finishStreaming();
+    },
+  });
+
+  const showText = isStreaming ? displayed : message.content;
+
+  if (!showText) {
+    if (message.pending) return <TypingDots />;
+    return <p className="text-muted-foreground">（无回复）</p>;
+  }
+
+  return (
+    <div className="relative">
+      <div className={cn(isStreaming && !done && "stream-cursor")}>
+        <Markdown>{showText}</Markdown>
+      </div>
+      {isStreaming && !done && (
+        <button
+          onClick={skip}
+          className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground/70 hover:text-foreground transition-colors cursor-pointer"
+          aria-label="跳过打字效果"
+        >
+          <SkipForward className="size-3" />
+          跳过
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -48,14 +88,8 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
         >
           {isUser ? (
             <p className="whitespace-pre-wrap break-words">{message.content}</p>
-          ) : message.content ? (
-            <div className={cn(message.streaming && "stream-cursor")}>
-              <Markdown>{message.content}</Markdown>
-            </div>
-          ) : message.streaming ? (
-            <TypingDots />
           ) : (
-            <p className="text-muted-foreground">（无回复）</p>
+            <AssistantContent message={message} />
           )}
         </div>
         {!isUser && message.steps && message.steps.length > 0 && (
@@ -66,7 +100,7 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
             </summary>
             <ol className="mt-2 space-y-1.5 border-l-2 border-primary/20 pl-3 text-xs text-muted-foreground font-mono">
               {message.steps.map((step, i) => (
-                <li key={i} className="rounded-md bg-muted/40 px-2.5 py-1.5 break-words">
+                <li key={i} className="rounded-md bg-muted/40 px-2.5 py-1.5 break-words whitespace-pre-wrap">
                   {step}
                 </li>
               ))}

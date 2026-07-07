@@ -2,6 +2,9 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
+import rehypeRaw from "rehype-raw";
+import rehypeHighlight from "rehype-highlight";
 import { cn } from "@/lib/utils";
 
 export function Markdown({
@@ -24,14 +27,45 @@ export function Markdown({
         "[&_a]:text-primary [&_a]:underline",
         "[&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs [&_code]:font-mono",
         "[&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-3",
+        "[&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-xs",
         "[&_table]:my-3 [&_table]:w-full [&_table]:border-collapse [&_table]:text-xs",
         "[&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_th]:bg-muted [&_th]:text-left [&_th]:font-medium",
         "[&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1",
         "[&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-primary/40 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground",
+        "[&_img]:my-3 [&_img]:w-full [&_img]:max-w-md [&_img]:rounded-xl [&_img]:border [&_img]:border-border [&_img]:shadow-sm",
+        "[&_figure]:my-3 [&_figure]:text-center",
+        "[&_figcaption]:mt-1 [&_figcaption]:text-xs [&_figcaption]:text-muted-foreground",
         className
       )}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        rehypePlugins={[rehypeRaw, rehypeHighlight]}
+        components={{
+          a: ({ href, children, ...props }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline hover:opacity-80 transition-opacity"
+              {...props}
+            >
+              {children}
+            </a>
+          ),
+          img: ({ src, alt, ...props }) => (
+            <img
+              src={typeof src === "string" ? src : ""}
+              alt={alt ?? ""}
+              loading="lazy"
+              className="my-3 w-full max-w-md rounded-xl border border-border shadow-sm"
+              {...props}
+            />
+          ),
+        }}
+      >
+        {children}
+      </ReactMarkdown>
     </div>
   );
 }

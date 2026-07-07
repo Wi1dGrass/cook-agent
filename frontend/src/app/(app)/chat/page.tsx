@@ -43,22 +43,25 @@ export default function ChatPage() {
       id: assistantId,
       role: "assistant",
       content: "",
-      streaming: true,
+      streaming: false,
+      pending: true,
       createdAt: Date.now(),
     });
 
     try {
+      let reply: string;
       if (conversationId) {
         const res = await chatSend(conversationId, text);
-        useChatStore.getState().appendToLast(res.reply);
+        reply = res.reply;
       } else {
         const res = await chatNew(text);
         setConversationId(res.conversationId);
-        useChatStore.getState().appendToLast(res.reply);
+        reply = res.reply;
       }
+      useChatStore.getState().setFinalContent(reply);
     } catch (e) {
       const msg = e instanceof ApiError ? friendlyMessage(e) : "请求失败";
-      useChatStore.getState().appendToLast(`\n\n> **出错：** ${msg}`);
+      useChatStore.getState().setFinalContent(`> **出错：** ${msg}`);
       toast.error(msg);
     } finally {
       setSending(false);

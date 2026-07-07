@@ -7,7 +7,10 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   steps?: string[];
+  /** 是否正在打字机输出中 */
   streaming?: boolean;
+  /** 是否正在等待响应（尚未拿到内容） */
+  pending?: boolean;
   createdAt: number;
 }
 
@@ -17,7 +20,12 @@ interface ChatState {
   sending: boolean;
   setConversationId: (id: string | null) => void;
   addMessage: (m: ChatMessage) => void;
+  /** 把完整内容写入最后一条 assistant 消息，并标记为打字机输出中 */
+  setFinalContent: (content: string) => void;
+  /** 追加文本到最后一条 assistant 消息（用于错误等场景） */
   appendToLast: (delta: string) => void;
+  /** 标记最后一条消息打字机结束 */
+  finishStreaming: () => void;
   setStepsToLast: (steps: string[]) => void;
   setSending: (v: boolean) => void;
   clear: () => void;
@@ -36,6 +44,20 @@ export const useChatStore = create<ChatState>((set) => ({
   sending: false,
   setConversationId: (id) => set({ conversationId: id }),
   addMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
+  setFinalContent: (content) =>
+    set((s) => {
+      if (s.messages.length === 0) return s;
+      const last = s.messages[s.messages.length - 1];
+      if (last.role !== "assistant") return s;
+      const msgs = s.messages.slice();
+      msgs[msgs.length - 1] = {
+        ...last,
+        content,
+        streaming: true,
+        pending: false,
+      };
+      return { messages: msgs };
+    }),
   appendToLast: (delta) =>
     set((s) => {
       if (s.messages.length === 0) return s;
@@ -43,6 +65,14 @@ export const useChatStore = create<ChatState>((set) => ({
       if (last.role !== "assistant") return s;
       const msgs = s.messages.slice();
       msgs[msgs.length - 1] = { ...last, content: last.content + delta };
+      return { messages: msgs };
+    }),
+  finishStreaming: () =>
+    set((s) => {
+      if (s.messages.length === 0) return s;
+      const msgs = s.messages.slice();
+      const last = msgs[msgs.length - 1];
+      msgs[msgs.length - 1] = { ...last, streaming: false, pending: false };
       return { messages: msgs };
     }),
   setStepsToLast: (steps) =>

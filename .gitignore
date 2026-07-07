@@ -9,6 +9,8 @@ cook-agent/chat-memory/
 CLAUDE.md
 docs/
 CookLikeHOC/
+.firecrawl/
+LANGCHAIN_ADVANCED.md
 
 # === IDE ===
 .idea/

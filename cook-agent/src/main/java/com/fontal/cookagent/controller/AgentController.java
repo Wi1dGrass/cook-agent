@@ -4,6 +4,7 @@ import com.fontal.cookagent.app.agent.CookManus;
 import com.fontal.cookagent.common.BizException;
 import com.fontal.cookagent.common.ErrorCode;
 import com.fontal.cookagent.security.CurrentUser;
+import com.fontal.cookagent.service.AgentSummaryService;
 import com.fontal.cookagent.service.HistoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,8 +27,9 @@ public class AgentController {
 
     private final CookManus cookManus;
     private final HistoryService historyService;
+    private final AgentSummaryService agentSummaryService;
 
-    @Operation(summary = "SSE 流式对话", description = "实时推送 Agent 每步 think/act/observation 结果")
+    @Operation(summary = "SSE 流式对话", description = "实时推送 Agent 每步 think/act 结果，结束后推送总结")
     @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chatStream(@RequestParam String message) {
         if (message.isBlank()) {
@@ -40,17 +42,18 @@ public class AgentController {
             }
             return emitter;
         }
-        return cookManus.runStream(message);
+        return agentSummaryService.runStreamWithSummary(message);
     }
 
-    @Operation(summary = "同步对话", description = "等待 Agent 全部执行完成后返回最终结果")
+    @Operation(summary = "同步对话", description = "等待 Agent 执行完成，返回总结后的最终结果")
     @PostMapping("/chat")
     public Map<String, Object> chat(@RequestBody Map<String, String> request) {
         String message = request.get("message");
         if (message == null || message.isBlank()) {
             throw new BizException(ErrorCode.PARAM_INVALID, "消息不能为空");
         }
-        String reply = cookManus.run(message);
+        String trace = cookManus.run(message);
+        String reply = agentSummaryService.summarize(message, trace);
         // Agent 是单次执行没 conversationId，按需生成
         String conversationId = UUID.randomUUID().toString();
         try {
@@ -60,6 +63,6 @@ public class AgentController {
             }
         } catch (Exception ignored) {
         }
-        return Map.of("conversationId", conversationId, "reply", reply);
+        return Map.of("conversationId", conversationId, "reply", reply, "trace", trace);
     }
 }

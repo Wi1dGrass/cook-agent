@@ -6,7 +6,6 @@ import { Bot, Loader2, Terminal, RotateCcw } from "lucide-react";
 
 import { useChatStore, uid, type ChatMessage } from "@/lib/store/chat-store";
 import { agentStream } from "@/lib/api/chat";
-import { ApiError, friendlyMessage } from "@/lib/api/errors";
 import { MessageList } from "@/components/chat/message-bubble";
 import { ChatInput } from "@/components/chat/chat-input";
 
@@ -16,22 +15,9 @@ const AGENT_SUGGESTIONS = [
   "搜索含有牛肉和土豆的菜谱，并给我看图片",
 ];
 
-function parseFinalReply(steps: string[]): string {
-  for (let i = steps.length - 1; i >= 0; i--) {
-    const s = steps[i];
-    if (s.includes("无需行动") || s.startsWith("Step")) {
-      const m = s.match(/[-—:]\s*(.+)$/s);
-      if (m && !s.includes("工具") && !s.includes("执行失败")) return m[1].trim();
-    }
-  }
-  return "";
-}
-
 export default function AgentPage() {
   const { messages, sending, addMessage, setSending, clear } = useChatStore();
-  const [steps, setSteps] = React.useState<string[]>([]);
   const abortRef = React.useRef<AbortController | null>(null);
-  const lastAssistantRef = React.useRef<string | null>(null);
 
   async function handleSend(text: string) {
     addMessage({
@@ -46,14 +32,13 @@ export default function AgentPage() {
       id: assistantId,
       role: "assistant",
       content: "",
-      streaming: true,
+      streaming: false,
+      pending: true,
       steps: [],
       createdAt: Date.now(),
     } as ChatMessage);
-    lastAssistantRef.current = assistantId;
 
     const collectedSteps: string[] = [];
-    setSteps(collectedSteps);
     setSending(true);
 
     const ctrl = new AbortController();
@@ -70,18 +55,17 @@ export default function AgentPage() {
           collectedSteps.push(step);
           updateSteps();
         },
+        onSummary: (summary) => {
+          useChatStore.getState().setFinalContent(summary);
+        },
         onError: (msg) => {
           toast.error(msg);
-          useChatStore.getState().appendToLast(`\n\n> **Agent 出错：** ${msg}`);
+          useChatStore.getState().setFinalContent(`> **Agent 出错：** ${msg}`);
         },
         onClose: () => {
-          const reply = parseFinalReply(collectedSteps);
-          if (reply) {
-            useChatStore.getState().appendToLast(reply);
-          } else if (collectedSteps.length > 0) {
-            useChatStore.getState().appendToLast(
-              "Agent 已完成执行，详见下方步骤。"
-            );
+          const last = useChatStore.getState().messages.at(-1);
+          if (last && last.role === "assistant" && !last.content && collectedSteps.length > 0) {
+            useChatStore.getState().setFinalContent("Agent 已完成执行，详见下方步骤。");
           }
           setSending(false);
           abortRef.current = null;
@@ -99,7 +83,6 @@ export default function AgentPage() {
   function handleReset() {
     if (sending) handleStop();
     clear();
-    setSteps([]);
   }
 
   return (
