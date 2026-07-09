@@ -12,6 +12,13 @@ CookLikeHOC/
 .firecrawl/
 LANGCHAIN_ADVANCED.md
 
+# === Unrelated documents ===
+MySQL-Interview-Questions.md
+MySQL数据库设计完全指南.md
+
+# === Local helper scripts ===
+run-backend.bat
+
 # === IDE ===
 .idea/
 .vscode/
