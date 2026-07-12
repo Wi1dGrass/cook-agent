@@ -9,7 +9,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -21,11 +21,12 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * 基于 Kryo 二进制序列化的文件持久化 ChatMemoryRepository，带 Caffeine L1 内存缓存。
+ * 基于 Kryo 二进制序列化的文件持久化 ChatMemoryRepository（已停用，保留备查）。
  * <p>
- * 配合 MessageWindowChatMemory 使用，滑动窗口的裁剪逻辑由 MessageWindowChatMemory 负责，本类只负责读写。
+ * 默认由 {@link MysqlChatMemoryRepository} 替代。若需启用本实现，设置
+ * {@code cook.chat.memory.backend=file}。
  */
-@Component
+@ConditionalOnProperty(name = "cook.chat.memory.backend", havingValue = "file")
 public class FileBasedChatMemory implements ChatMemoryRepository {
 
     private final Path storageDir;

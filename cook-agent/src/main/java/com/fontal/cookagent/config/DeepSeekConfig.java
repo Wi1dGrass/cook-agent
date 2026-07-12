@@ -12,18 +12,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * DeepSeek + JDBC 聊天记忆配置。
+ * DeepSeek + MySQL 聊天记忆配置。
  *
- * ChatMemoryRepository 由 Spring AI JdbcChatMemoryRepositoryAutoConfiguration 自动配置，
- * 数据源使用当前活跃 profile 对应的 DataSource（local → MySQL, pgvector → PostgreSQL）。
- * Schema 初始化由 spring.ai.chat.memory.repository.jdbc.initialize-schema=always 控制。
+ * ChatMemoryRepository 由 {@link com.fontal.cookagent.app.memory.MysqlChatMemoryRepository} 提供，
+ * 数据源使用主 MySQL（cook_like_hoc 库），schema 见 sql/schema.sql 中的 chat_memory 表。
+ * 已替代原 FileBasedChatMemory（Kryo 文件）方案，统一使用 MySQL 持久化。
  */
 @Configuration
-@EnableConfigurationProperties(ChatMemoryProperties.class)
+@EnableConfigurationProperties({ChatMemoryProperties.class, AgentProperties.class})
 public class DeepSeekConfig {
 
     /**
-     * 滑动窗口记忆（maxMessages=20），底层由 JDBC 自动配置的 ChatMemoryRepository 持久化。
+     * 滑动窗口记忆（maxMessages=20），底层由 MySQL 持久化。
      */
     @Bean
     public ChatMemory chatMemory(ChatMemoryRepository chatMemoryRepository) {

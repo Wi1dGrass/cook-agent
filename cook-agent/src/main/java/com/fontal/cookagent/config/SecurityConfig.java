@@ -43,11 +43,13 @@ public class SecurityConfig {
                         .requestMatchers("/health", "/health/**", "/images/**").permitAll()
                         // 公开端点：登录/注册
                         .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login").permitAll()
-                        // 所有 GET 查询端点放行（菜谱检索、Agent SSE 对话等公开服务）
+                        // 所有 GET 查询端点放行（菜谱检索等公开服务）
                         .requestMatchers(HttpMethod.GET, "/recipes/**", "/categories/**",
-                                "/ingredients/**", "/agent/**", "/chat/**").permitAll()
-                        // 对话型 POST 端点公开（chat/new, chat/send, agent/chat 不绑定用户）
-                        .requestMatchers(HttpMethod.POST, "/chat/new", "/chat/send", "/agent/chat").permitAll()
+                                "/ingredients/**").permitAll()
+                        // 对话型 POST 端点公开（chat/new, chat/send 可匿名使用）
+                        .requestMatchers(HttpMethod.POST, "/chat/new", "/chat/send").permitAll()
+                        // Agent 对话 + 流式 + 会话管理（需登录，绑定用户身份实现多轮）
+                        .requestMatchers("/agent/**").hasAnyRole("CHEF", "MANAGER", "ADMIN")
                         // 写操作需要登录（CHEF+ 以上）
                         .requestMatchers(HttpMethod.POST, "/recipes").hasAnyRole("CHEF", "MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/recipes/**").hasAnyRole("CHEF", "MANAGER", "ADMIN")

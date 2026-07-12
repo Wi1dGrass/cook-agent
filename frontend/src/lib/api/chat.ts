@@ -6,6 +6,9 @@ import type {
   ChatSendResponse,
   AgentChatResponse,
   ChatHistory,
+  SessionSummary,
+  AgentSessionResponse,
+  AgentSessionListItem,
 } from "./types";
 
 export async function chatNew(message: string) {
@@ -22,10 +25,10 @@ export async function chatSend(conversationId: string, message: string) {
   });
 }
 
-export async function agentChat(message: string) {
+export async function agentChat(message: string, conversationId?: string) {
   return clientApiFetch<AgentChatResponse>("/agent/chat", {
     method: "POST",
-    body: { message },
+    body: conversationId ? { message, conversationId } : { message },
   });
 }
 
@@ -46,6 +49,37 @@ export async function deleteConversation(conversationId: string) {
   );
 }
 
+/** 服务端分组的会话列表 */
+export async function listSessions() {
+  return clientApiFetch<SessionSummary[]>("/user/sessions");
+}
+
+/** 加载 Agent 会话完整消息（含工具调用步骤） */
+export async function getAgentSession(conversationId: string) {
+  return clientApiFetch<AgentSessionResponse>(`/agent/session/${conversationId}`);
+}
+
+/** 关闭 Agent 会话并压缩上下文 */
+export async function closeAgentSession(conversationId: string) {
+  return clientApiFetch<{ conversationId: string; status: string; compressed: boolean }>(
+    `/agent/session/${conversationId}/close`,
+    { method: "POST" }
+  );
+}
+
+/** 删除 Agent 会话 */
+export async function deleteAgentSession(conversationId: string) {
+  return clientApiFetch<{ conversationId: string; deleted: boolean }>(
+    `/agent/session/${conversationId}`,
+    { method: "DELETE" }
+  );
+}
+
+/** 列出 Agent 会话 */
+export async function listAgentSessions() {
+  return clientApiFetch<AgentSessionListItem[]>("/agent/sessions");
+}
+
 export interface AgentStreamHandlers {
   onStep: (step: string) => void;
   /** 收到最终总结（后端发送「【最终总结】\n...」格式的 data 事件） */
@@ -59,10 +93,13 @@ const SUMMARY_PREFIX = "【最终总结】";
 export async function agentStream(
   message: string,
   handlers: AgentStreamHandlers,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  conversationId?: string
 ): Promise<void> {
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8088/api";
-  const url = `${base}/agent/chat/stream?message=${encodeURIComponent(message)}`;
+  // 通过 Next.js SSE 代理路由（注入 JWT 认证）
+  const url = `/api/agent/stream?message=${encodeURIComponent(message)}${
+    conversationId ? `&conversationId=${encodeURIComponent(conversationId)}` : ""
+  }`;
 
   let res: Response;
   try {

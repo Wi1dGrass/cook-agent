@@ -1,6 +1,7 @@
 package com.fontal.cookagent.controller;
 
 import com.fontal.cookagent.dto.RecipeSummaryResponse;
+import com.fontal.cookagent.dto.SessionSummary;
 import com.fontal.cookagent.entity.ChatHistory;
 import com.fontal.cookagent.security.CurrentUser;
 import com.fontal.cookagent.service.FavoriteService;
@@ -16,7 +17,7 @@ import java.util.Map;
 /**
  * 用户中心 — 收藏与查询历史。
  */
-@Tag(name = "用户中心", description = "用户收藏 / 查询历史")
+@Tag(name = "用户中心", description = "用户收藏 / 查询历史 / 会话列表")
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
@@ -66,5 +67,13 @@ public class UserController {
     public Map<String, Object> deleteHistory(@PathVariable String conversationId) {
         historyService.deleteByConversation(CurrentUser.requireUserId(), conversationId);
         return Map.of("conversationId", conversationId, "deleted", true);
+    }
+
+    // ==================== 会话列表（侧边栏 / 历史页） ====================
+
+    @Operation(summary = "列出当前用户的所有会话", description = "服务端按 conversation_id 分组，返回会话摘要列表（标题/消息数/最后时间/来源），倒序")
+    @GetMapping("/sessions")
+    public List<SessionSummary> listSessions() {
+        return historyService.listSessions(CurrentUser.requireUserId());
     }
 }

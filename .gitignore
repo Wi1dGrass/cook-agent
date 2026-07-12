@@ -45,3 +45,6 @@ __pycache__/
 # === Environment ===
 .env
 *.env.local
+
+# === Test artifacts (auto-generated, not committed) ===
+/test/

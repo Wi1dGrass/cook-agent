@@ -35,6 +35,8 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   # Spring AI DeepSeek 配置（OpenAI 兼容；API Key 见 application-local.yml）
+  # 注意：DeepSeek 仅用于 chat（LLM），不用于 embedding。
+  # Embedding 由 ZhipuAiEmbeddingConfig 提供智谱 embedding-3 模型（所有 profile 共用）。
   ai:
     openai:
       api-key: ${DEEPSEEK_API_KEY:}
@@ -43,9 +45,6 @@ spring:
         options:
           model: deepseek-v4-flash
           temperature: 0.8
-      embedding:
-        options:
-          model: deepseek-embedding
 
 # MyBatis-Plus 配置
 mybatis-plus:
@@ -89,8 +88,18 @@ logging:
 cook:
   chat:
     memory:
+      # 记忆后端：mysql（默认）/ file（Kryo 文件，已停用）
+      backend: mysql
       storage-path: ${COOK_MEMORY_PATH:./chat-memory}
       eviction-days: 7
+  # Agent 多轮会话 + 上下文压缩配置
+  agent:
+    # 上下文压缩阈值（token 估算值），超过则自动压缩
+    context-max-tokens: 200000
+    # 自动压缩时保留最近 N 轮的完整上下文
+    keep-recent-turns: 1
+    # 会话标题最大长度
+    title-max-length: 10
   cache:
     redis:
       enable: true
@@ -127,6 +136,11 @@ cook:
     retrieval:
       top-k: 5
       similarity-threshold: 0.30
+    # ZhipuAI Embedding 配置（所有 profile 共用，DeepSeek 无 embedding 模型）
+    zhipu:
+      api-key: ${ZHIPU_API_KEY:}
+      embedding-model: embedding-3
+      dimensions: 1024
 
   # 第三方 API Key（敏感信息见 application-local.yml）
   pexels:
@@ -160,11 +174,6 @@ spring:
           username: ${PG_USER:postgres}
           password: ${PG_PASSWORD:}
           driver-class-name: org.postgresql.Driver
-    # embedding 由 ZhipuAiEmbeddingConfig @Primary 提供，不走 OpenAI
+    # embedding 由 ZhipuAiEmbeddingConfig @Primary 提供（所有 profile 共用）
 
-cook:
-  rag:
-    zhipu:
-      api-key: ${ZHIPU_API_KEY:}
-      embedding-model: embedding-3
-      dimensions: 1024
+

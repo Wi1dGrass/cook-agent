@@ -2,10 +2,12 @@
 
 import * as React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { History, Loader2, Trash2, Eye, MessageSquare } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { History, Loader2, Trash2, Eye, MessageSquare, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { listHistory, getConversation, deleteConversation } from "@/lib/api/chat";
+import { useChatStore, uid, type ChatMessage } from "@/lib/store/chat-store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +25,7 @@ import { friendlyMessage, ApiError } from "@/lib/api/errors";
 import type { ChatHistory } from "@/lib/api/types";
 
 export default function HistoryPage() {
+  const router = useRouter();
   const qc = useQueryClient();
   const { data, isFetching, error } = useQuery({
     queryKey: ["history"],
@@ -36,6 +39,7 @@ export default function HistoryPage() {
       qc.setQueryData<ChatHistory[]>(["history"], (old) =>
         (old ?? []).filter((h) => h.conversationId !== convId)
       );
+      qc.invalidateQueries({ queryKey: ["sessions"] });
       toast.success("对话已删除");
     } catch (e) {
       toast.error(e instanceof ApiError ? friendlyMessage(e) : "删除失败");
@@ -94,14 +98,18 @@ export default function HistoryPage() {
                         </span>
                       </div>
                       <p className="mt-1.5 line-clamp-1 text-sm font-medium">
-                        {g.items[0].query}
+                        {g.items[0].title || g.items[0].query}
                       </p>
                       <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
                         {truncate(g.items[0].reply, 80)} · 共 {g.items.length} 条
                       </p>
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      <ConversationDialog conversationId={g.conversationId} title={g.items[0].query}>
+                      <ConversationDialog
+                        conversationId={g.conversationId}
+                        title={g.items[0].title || g.items[0].query}
+                        channel={g.items[0].channel}
+                      >
                         {g.items}
                       </ConversationDialog>
                       <Button
@@ -134,15 +142,19 @@ export default function HistoryPage() {
 function ConversationDialog({
   conversationId,
   title,
+  channel,
   children,
 }: {
   conversationId: string;
   title: string;
+  channel: string;
   children: ChatHistory[];
 }) {
+  const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [items, setItems] = React.useState<ChatHistory[]>(children);
   const [loading, setLoading] = React.useState(false);
+  const [resuming, setResuming] = React.useState(false);
 
   async function loadFull() {
     if (children.length >= 2) {
@@ -157,6 +169,37 @@ function ConversationDialog({
       setItems(children);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleContinue() {
+    setResuming(true);
+    try {
+      const full = items.length >= 2 ? items : await getConversation(conversationId);
+      const messages: ChatMessage[] = [];
+      for (const h of full) {
+        messages.push({
+          id: uid(),
+          role: "user",
+          content: h.query,
+          createdAt: new Date(h.createdAt).getTime(),
+        });
+        if (h.reply) {
+          messages.push({
+            id: uid(),
+            role: "assistant",
+            content: h.reply,
+            createdAt: new Date(h.createdAt).getTime() + 1,
+          });
+        }
+      }
+      useChatStore.getState().loadConversation(conversationId, messages);
+      setOpen(false);
+      router.push(channel === "AGENT" ? "/agent" : "/chat");
+    } catch (e) {
+      toast.error(e instanceof ApiError ? friendlyMessage(e) : "加载失败");
+    } finally {
+      setResuming(false);
     }
   }
 
@@ -187,23 +230,40 @@ function ConversationDialog({
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="space-y-4 py-2">
-            {items.map((h) => (
-              <div key={h.id} className="space-y-1.5">
-                <div className="rounded-lg bg-secondary px-3 py-2">
-                  <p className="text-xs font-medium text-muted-foreground">你</p>
-                  <p className="mt-0.5 text-sm">{h.query}</p>
-                </div>
-                <div className="rounded-lg border border-border px-3 py-2">
-                  <p className="text-xs font-medium text-muted-foreground">CookManus</p>
-                  <div className="mt-0.5">
-                    <Markdown>{h.reply}</Markdown>
+          <>
+            <div className="space-y-4 py-2">
+              {items.map((h) => (
+                <div key={h.id} className="space-y-1.5">
+                  <div className="rounded-lg bg-secondary px-3 py-2">
+                    <p className="text-xs font-medium text-muted-foreground">你</p>
+                    <p className="mt-0.5 text-sm">{h.query}</p>
                   </div>
+                  <div className="rounded-lg border border-border px-3 py-2">
+                    <p className="text-xs font-medium text-muted-foreground">CookManus</p>
+                    <div className="mt-0.5">
+                      <Markdown>{h.reply}</Markdown>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{formatDate(h.createdAt)}</p>
                 </div>
-                <p className="text-xs text-muted-foreground">{formatDate(h.createdAt)}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <div className="sticky bottom-0 -mx-6 -mb-4 flex justify-end gap-2 border-t border-border/60 bg-background/80 px-6 py-3 backdrop-blur">
+              <Button
+                onClick={handleContinue}
+                disabled={resuming}
+                className="cursor-pointer gap-1.5"
+                size="sm"
+              >
+                {resuming ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="size-3.5" />
+                )}
+                继续这段对话
+              </Button>
+            </div>
+          </>
         )}
       </DialogContent>
     </Dialog>

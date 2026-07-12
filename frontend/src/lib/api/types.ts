@@ -124,6 +124,7 @@ export interface ChatHistory {
   query: string;
   reply: string;
   channel: "CHAT" | "AGENT";
+  title?: string | null;
   createdAt: string;
 }
 
@@ -139,6 +140,43 @@ export interface ChatSendResponse {
 export interface AgentChatResponse {
   conversationId: string;
   reply: string;
+  status?: string;
+}
+
+/** 会话摘要 — 服务端按 conversationId 分组返回 */
+export interface SessionSummary {
+  conversationId: string;
+  title: string | null;
+  firstQuery: string | null;
+  channel: "CHAT" | "AGENT";
+  messageCount: number;
+  status?: string | null;
+  createdAt: string;
+  lastAt: string;
+}
+
+/** Agent 会话消息视图 */
+export interface AgentSessionMessageView {
+  type: "USER" | "ASSISTANT" | "SYSTEM" | "TOOL";
+  content: string;
+}
+
+/** Agent 会话详情 */
+export interface AgentSessionResponse {
+  conversationId: string;
+  title: string;
+  status: string;
+  compressed: number;
+  messages: AgentSessionMessageView[];
+}
+
+/** Agent 会话列表项 */
+export interface AgentSessionListItem {
+  conversationId: string;
+  title: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ErrorResponse {

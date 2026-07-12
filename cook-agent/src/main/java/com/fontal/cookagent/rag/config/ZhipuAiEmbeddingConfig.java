@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.ai.embedding.EmbeddingModel;
 
 @Configuration
-@Profile("pgvector")
 public class ZhipuAiEmbeddingConfig {
 
     @Bean

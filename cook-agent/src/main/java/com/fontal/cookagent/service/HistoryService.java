@@ -1,6 +1,7 @@
 package com.fontal.cookagent.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fontal.cookagent.dto.SessionSummary;
 import com.fontal.cookagent.entity.ChatHistory;
 import com.fontal.cookagent.mapper.ChatHistoryMapper;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * 查询历史服务 — 记录用户每次提问与 AI 回复。
+ * 查询历史服务 — 记录用户每次提问与 AI 回复，并提供会话列表查询。
  */
 @Slf4j
 @Service
@@ -56,5 +57,24 @@ public class HistoryService {
                 new LambdaQueryWrapper<ChatHistory>()
                         .eq(ChatHistory::getUserId, userId)
                         .eq(ChatHistory::getConversationId, conversationId));
+    }
+
+    /**
+     * 列出用户的所有会话摘要（按最后活动时间倒序）。
+     * 服务端按 conversation_id 分组，避免客户端分组。
+     */
+    public List<SessionSummary> listSessions(Long userId) {
+        return chatHistoryMapper.selectSessionList(userId);
+    }
+
+    /**
+     * 判断会话是否已存在（用于决定是否生成标题）。
+     */
+    public boolean conversationExists(Long userId, String conversationId) {
+        Long count = chatHistoryMapper.selectCount(
+                new LambdaQueryWrapper<ChatHistory>()
+                        .eq(ChatHistory::getUserId, userId)
+                        .eq(ChatHistory::getConversationId, conversationId));
+        return count != null && count > 1; // > 1 因为当前记录已插入
     }
 }

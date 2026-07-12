@@ -25,5 +25,8 @@ public class ChatHistory {
     /** 来源：CHAT / AGENT */
     private String channel;
 
+    /** 会话标题（仅首条记录写入，LLM 生成） */
+    private String title;
+
     private LocalDateTime createdAt;
 }

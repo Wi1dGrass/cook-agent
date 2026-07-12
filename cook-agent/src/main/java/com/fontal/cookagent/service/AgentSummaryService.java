@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fontal.cookagent.app.agent.CookManus;
 import com.fontal.cookagent.app.agent.model.AgentState;
+import com.fontal.cookagent.entity.AgentSession;
 import com.fontal.cookagent.rag.advisor.MyLoggerAdvisor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -21,8 +22,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Agent 总结服务 — 在 Agent 执行结束后，将执行轨迹总结为对用户友好的最终回复。
  * <p>
- * 不修改原有 Agent 核心代码（BaseAgent/ReActAgent/ToolCallAgent/CookManus），
- * 仅通过调用公开 API 编排"执行 + 总结"流程。
+ * 支持多轮对话：通过 {@link AgentSessionService} 持久化和恢复 Agent 上下文。
  * <p>
  * 同步：cookManus.run() → summarize()
  * 流式：自己驱动 cookManus.step() 循环 → 每步推送 → 最后推送总结
@@ -41,6 +41,7 @@ public class AgentSummaryService {
             - 菜品推荐说明推荐理由
             - 不要提及"工具"、"步骤"、"调用"等内部执行细节
             - 如果记录中包含错误或未找到信息，如实告知并给出建议
+            - 若对话有历史上下文，结合历史继续回答，保持连贯性
             """;
 
     private static final String SUMMARY_USER = """
@@ -54,27 +55,22 @@ public class AgentSummaryService {
 
     private final ChatClient summaryChatClient;
     private final CookManus cookManus;
+    private final AgentSessionService sessionService;
+    private final AgentContextCompressor compressor;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public AgentSummaryService(OpenAiChatModel chatModel, CookManus cookManus) {
+    public AgentSummaryService(OpenAiChatModel chatModel, CookManus cookManus,
+                                AgentSessionService sessionService, AgentContextCompressor compressor) {
         this.summaryChatClient = ChatClient.builder(chatModel)
                 .defaultAdvisors(new MyLoggerAdvisor())
                 .build();
         this.cookManus = cookManus;
+        this.sessionService = sessionService;
+        this.compressor = compressor;
     }
 
     /**
      * 反转义工具返回结果中的 JSON 字符串编码。
-     * <p>
-     * Spring AI 的 {@code DefaultToolCallResultConverter} 用 {@code JsonParser.toJson()} 序列化工具返回值，
-     * 对 String 类型会加引号并转义换行符为字面 {@code \n}（反斜杠+n）。
-     * {@code ToolCallAgent.act()} 拼接格式为 {@code 工具 XXX 返回的结果："JSON字符串"}，
-     * 每个工具响应占一行（用真正换行分隔）。
-     * <p>
-     * 此方法提取每行中 JSON 编码的部分并用 Jackson 反序列化，恢复真正的换行和原始内容。
-     *
-     * @param text step() 返回的原始结果
-     * @return 反转义后的可读文本
      */
     private String unescapeToolResponse(String text) {
         if (text == null || !text.contains("返回的结果：")) {
@@ -103,11 +99,7 @@ public class AgentSummaryService {
     }
 
     /**
-     * 重置 Agent 单例状态到 IDLE，清理消息上下文和步骤计数。
-     * <p>
-     * CookManus 是 Spring 单例，BaseAgent.run() / runStream() 执行完毕后 state 会停留在
-     * FINISHED 或 ERROR，且 BaseAgent.cleanup() 在子类中未被重写（空实现），
-     * 导致后续请求因 state != IDLE 被永久阻塞。此方法确保每次调用后状态归位。
+     * 将 Agent 状态恢复到 IDLE 并清理上下文（供下次调用使用）。
      */
     private void resetAgentState() {
         cookManus.setState(AgentState.IDLE);
@@ -117,10 +109,6 @@ public class AgentSummaryService {
 
     /**
      * 将 Agent 执行轨迹总结为用户友好的最终回复。
-     *
-     * @param userMessage 用户原始问题
-     * @param trace       Agent 执行轨迹（Step 1: ... Step 2: ...）
-     * @return 总结回复；总结失败时返回原始轨迹
      */
     public String summarize(String userMessage, String trace) {
         if (StrUtil.isBlank(trace)) {
@@ -141,33 +129,55 @@ public class AgentSummaryService {
         }
     }
 
+    // ==================== 同步执行（多轮） ====================
+
     /**
-     * 同步执行 Agent 并返回总结。
+     * 同步执行 Agent 并返回总结。支持多轮：从 session 恢复上下文，执行后保存。
      *
      * @param message 用户输入
+     * @param session Agent 会话（若为 null 则不持久化）
      * @return 总结回复
      */
-    public String runWithSummary(String message) {
+    public String runWithSummary(String message, AgentSession session) {
+        // 从 session 恢复上下文
+        if (session != null) {
+            List<org.springframework.ai.chat.messages.Message> restored = sessionService.loadMessages(session);
+            cookManus.setMessageList(new ArrayList<>(restored));
+            cookManus.setCurrentStep(session.getCurrentStep() != null ? session.getCurrentStep() : 0);
+            cookManus.setState(AgentState.IDLE);
+        }
+
         String trace;
         try {
             trace = cookManus.run(message);
         } finally {
+            // 即使出错也保存上下文（便于调试和续聊）
+            if (session != null) {
+                try {
+                    sessionService.saveMessages(session, cookManus.getMessageList(),
+                            cookManus.getCurrentStep(), true);
+                } catch (Exception e) {
+                    log.warn("保存 Agent 会话失败: {}", e.getMessage());
+                }
+            }
             resetAgentState();
         }
         trace = unescapeToolResponse(trace);
         return summarize(message, trace);
     }
 
+    // ==================== 流式执行（多轮） ====================
+
     /**
-     * 流式执行 Agent，每步推送结果，最后推送总结。
-     * <p>
-     * 自己驱动 cookManus.step() 循环（调用公开 API），以便在结尾追加总结事件，
-     * 而不修改 BaseAgent.runStream 的核心代码。
+     * 流式执行 Agent，每步推送结果，最后推送总结。支持多轮。
      *
      * @param message 用户输入
+     * @param session Agent 会话（若为 null 则不持久化）
+     * @param onSummaryReady 总结生成后的回调（接收总结文本，用于异步记录历史）
      * @return SseEmitter
      */
-    public SseEmitter runStreamWithSummary(String message) {
+    public SseEmitter runStreamWithSummary(String message, AgentSession session,
+                                            java.util.function.Consumer<String> onSummaryReady) {
         SseEmitter emitter = new SseEmitter(300000L);
         CompletableFuture.runAsync(() -> {
             boolean ownsRun = false;
@@ -182,11 +192,17 @@ public class AgentSummaryService {
                     emitter.complete();
                     return;
                 }
-                // 初始化 Agent 状态（复刻 BaseAgent.runStream 的启动逻辑）
+                // 从 session 恢复上下文
+                if (session != null) {
+                    List<org.springframework.ai.chat.messages.Message> restored = sessionService.loadMessages(session);
+                    cookManus.setMessageList(new ArrayList<>(restored));
+                    cookManus.setCurrentStep(session.getCurrentStep() != null ? session.getCurrentStep() : 0);
+                } else {
+                    cookManus.setMessageList(new ArrayList<>());
+                    cookManus.setCurrentStep(0);
+                }
                 cookManus.setState(AgentState.RUNNING);
                 ownsRun = true;
-                cookManus.setMessageList(new ArrayList<>());
-                cookManus.setCurrentStep(0);
                 cookManus.getMessageList().add(new UserMessage(message));
 
                 List<String> traceList = new ArrayList<>();
@@ -200,6 +216,15 @@ public class AgentSummaryService {
                     String result = "Step " + stepNumber + ": " + stepResult;
                     traceList.add(result);
                     emitter.send(result);
+
+                    // 每步后检查是否需要自动压缩（compressIfNeeded 内部判断阈值）
+                    if (session != null) {
+                        List<org.springframework.ai.chat.messages.Message> compressed =
+                                compressor.compressIfNeeded(cookManus.getMessageList());
+                        if (compressed.size() != cookManus.getMessageList().size()) {
+                            cookManus.setMessageList(compressed);
+                        }
+                    }
                 }
                 // 超出步骤限制
                 if (cookManus.getCurrentStep() >= maxSteps) {
@@ -217,6 +242,14 @@ public class AgentSummaryService {
                     summary = "总结生成失败，以上为完整执行记录。";
                 }
                 emitter.send("【最终总结】\n" + summary);
+                // 触发回调（用于异步记录历史）
+                if (onSummaryReady != null) {
+                    try {
+                        onSummaryReady.accept(summary);
+                    } catch (Exception cbErr) {
+                        log.warn("onSummaryReady 回调失败: {}", cbErr.getMessage());
+                    }
+                }
                 emitter.complete();
             } catch (Exception e) {
                 if (ownsRun) {
@@ -230,7 +263,15 @@ public class AgentSummaryService {
                     emitter.completeWithError(ex);
                 }
             } finally {
-                // 只有当前请求持有 Agent 控制权时才重置，避免误重置其他并发执行的状态
+                // 保存会话上下文
+                if (ownsRun && session != null) {
+                    try {
+                        sessionService.saveMessages(session, cookManus.getMessageList(),
+                                cookManus.getCurrentStep(), true);
+                    } catch (Exception e) {
+                        log.warn("保存 Agent 流式会话失败: {}", e.getMessage());
+                    }
+                }
                 if (ownsRun) {
                     resetAgentState();
                 }

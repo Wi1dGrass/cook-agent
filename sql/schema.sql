@@ -129,12 +129,52 @@ CREATE TABLE IF NOT EXISTS `chat_history` (
     `query`          VARCHAR(1024) NOT NULL COMMENT '用户提问',
     `reply`          MEDIUMTEXT   DEFAULT NULL COMMENT 'AI 回复',
     `channel`        VARCHAR(32)  DEFAULT 'CHAT' COMMENT '来源：CHAT/AGENT',
+    `title`          VARCHAR(64)  DEFAULT NULL COMMENT '会话标题（仅首条记录写入）',
     `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX `idx_user_id` (`user_id`),
     INDEX `idx_conversation_id` (`conversation_id`),
     CONSTRAINT `fk_history_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='查询历史表';
+
+-- ============================================================
+-- 9. 聊天记忆表（替代 Kryo 文件，存储普通对话的完整 LLM 消息）
+--    由 MysqlChatMemoryRepository 使用，配合 MessageWindowChatMemory
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `chat_memory` (
+    `id`             BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `conversation_id` VARCHAR(64)  NOT NULL COMMENT '对话ID',
+    `seq_id`         INT          NOT NULL COMMENT '消息在对话中的顺序索引',
+    `message_type`   VARCHAR(32)  NOT NULL COMMENT '消息类型：USER/SYSTEM/ASSISTANT/TOOL_RESPONSE',
+    `content`        MEDIUMTEXT   DEFAULT NULL COMMENT '消息文本内容',
+    `tool_calls_json` TEXT        DEFAULT NULL COMMENT 'AssistantMessage 的工具调用 JSON',
+    `tool_responses_json` TEXT    DEFAULT NULL COMMENT 'ToolResponseMessage 的工具响应 JSON',
+    `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_conv_seq` (`conversation_id`, `seq_id`),
+    INDEX `idx_conversation_id` (`conversation_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天记忆表';
+
+-- ============================================================
+-- 10. Agent 会话表（支持 Agent 多轮对话 + 上下文压缩）
+--    存储完整 messageList（含工具调用），由 AgentSessionService 使用
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `agent_session` (
+    `id`             BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `user_id`        BIGINT       NOT NULL COMMENT '用户ID',
+    `conversation_id` VARCHAR(64)  NOT NULL COMMENT '对话ID',
+    `title`          VARCHAR(64)  DEFAULT NULL COMMENT '会话标题（LLM 生成）',
+    `status`         VARCHAR(16)  NOT NULL DEFAULT 'ACTIVE' COMMENT 'ACTIVE/CLOSED',
+    `message_list`   LONGTEXT     DEFAULT NULL COMMENT '完整消息列表 JSON（含工具调用）',
+    `current_step`   INT          NOT NULL DEFAULT 0 COMMENT '当前步骤',
+    `compressed`     TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '是否已压缩上下文',
+    `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_conversation_id` (`conversation_id`),
+    INDEX `idx_user_id` (`user_id`),
+    CONSTRAINT `fk_agent_session_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Agent 会话表';
 
 -- ============================================================
 -- 初始化分类数据
