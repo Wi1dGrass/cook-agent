@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, User, Loader2, SkipForward } from "lucide-react";
+import { Bot, User, Loader2, SkipForward, Copy, Check } from "lucide-react";
 import { Markdown } from "@/components/common/markdown";
 import { useTypewriter } from "@/hooks/use-typewriter";
 import { useChatStore } from "@/lib/store/chat-store";
@@ -16,6 +16,34 @@ function TypingDots() {
       <span className="typing-dot size-1.5 rounded-full bg-muted-foreground" />
       <span className="typing-dot size-1.5 rounded-full bg-muted-foreground" />
     </span>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = React.useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={cn(
+        "inline-flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer",
+        "opacity-0 group-hover:opacity-100"
+      )}
+      aria-label="复制"
+    >
+      {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
+      {copied ? "已复制" : "复制"}
+    </button>
   );
 }
 
@@ -43,6 +71,11 @@ function AssistantContent({ message }: { message: ChatMessage }) {
       <div className={cn(isStreaming && !done && "stream-cursor")}>
         <Markdown>{showText}</Markdown>
       </div>
+      {!isStreaming && (
+        <div className="mt-1">
+          <CopyButton text={message.content} />
+        </div>
+      )}
       {isStreaming && !done && (
         <button
           onClick={skip}
@@ -87,7 +120,12 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
           )}
         >
           {isUser ? (
-            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            <div className="relative">
+              <p className="whitespace-pre-wrap break-words">{message.content}</p>
+              <div className="mt-1">
+                <CopyButton text={message.content} />
+              </div>
+            </div>
           ) : (
             <AssistantContent message={message} />
           )}

@@ -79,4 +79,14 @@ public class FavoriteService {
                 .map(RecipeSummaryResponse::from)
                 .toList();
     }
+
+    /** 检查用户是否已收藏某菜品 */
+    public boolean isFavorited(Long userId, Long recipeId) {
+        if (userId == null || recipeId == null) return false;
+        Long count = userFavoriteMapper.selectCount(
+                new LambdaQueryWrapper<UserFavorite>()
+                        .eq(UserFavorite::getUserId, userId)
+                        .eq(UserFavorite::getRecipeId, recipeId));
+        return count > 0;
+    }
 }

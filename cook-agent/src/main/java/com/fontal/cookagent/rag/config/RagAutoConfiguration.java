@@ -1,15 +1,16 @@
 package com.fontal.cookagent.rag.config;
 
+import com.fontal.cookagent.rag.etl.ConcurrentSummaryEnricher;
 import com.fontal.cookagent.rag.properties.RagProperties;
 import com.fontal.cookagent.rag.query.CookRewriteQueryTransformer;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.model.transformer.SummaryMetadataEnricher;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,11 +33,12 @@ public class RagAutoConfiguration {
                 cfg.isKeepSeparator());
     }
 
-    /** AI 摘要增强器 — 为每个 chunk 生成 前/中/后 三段摘要 */
+    /** 并发 AI 摘要增强器 — 线程池并行为每个 chunk 生成摘要 */
     @Bean
-    public SummaryMetadataEnricher summaryMetadataEnricher(ChatModel chatModel) {
-        return new SummaryMetadataEnricher(chatModel,
-                List.of(SummaryMetadataEnricher.SummaryType.PREVIOUS, SummaryMetadataEnricher.SummaryType.CURRENT, SummaryMetadataEnricher.SummaryType.NEXT));
+    public ConcurrentSummaryEnricher summaryMetadataEnricher(
+            ChatModel chatModel,
+            @Value("${cook.rag.etl.enrich-concurrency:16}") int concurrency) {
+        return new ConcurrentSummaryEnricher(chatModel, concurrency);
     }
 
     /** 查询重写器 */

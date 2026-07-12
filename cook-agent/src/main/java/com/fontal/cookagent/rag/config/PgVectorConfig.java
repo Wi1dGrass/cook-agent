@@ -47,10 +47,14 @@ public class PgVectorConfig {
     }
 
     @Bean
+    public JdbcTemplate pgJdbcTemplate(@Qualifier("pgDataSource") DataSource pgDataSource) {
+        return new JdbcTemplate(pgDataSource);
+    }
+
+    @Bean
     public VectorStore vectorStore(EmbeddingModel embeddingModel,
-                                   @Qualifier("pgDataSource") DataSource pgDataSource) {
-        JdbcTemplate jt = new JdbcTemplate(pgDataSource);
-        return PgVectorStore.builder(jt, embeddingModel)
+                                   @Qualifier("pgJdbcTemplate") JdbcTemplate pgJdbcTemplate) {
+        return PgVectorStore.builder(pgJdbcTemplate, embeddingModel)
                 .dimensions(1024)
                 .distanceType(COSINE_DISTANCE)
                 .indexType(HNSW)

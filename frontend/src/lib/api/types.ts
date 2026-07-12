@@ -67,6 +67,7 @@ export interface RecipeDetail {
   ingredients: IngredientInfo[];
   steps: StepInfo[];
   createdAt?: string;
+  favorited?: boolean;
 }
 
 export interface PageResult<T> {

@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   Database,
   Users,
+  UserCircle,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/lib/api/types";
@@ -39,6 +40,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "每日推荐", href: "/recipes/daily", icon: CalendarDays, group: "菜谱" },
   { title: "菜谱分类", href: "/categories", icon: FolderTree, group: "菜谱" },
   { title: "新建菜谱", href: "/recipes/new", icon: ChefHat, minRole: "CHEF", group: "我的" },
+  { title: "个人中心", href: "/user/profile", icon: UserCircle, minRole: "CHEF", group: "我的" },
   { title: "我的收藏", href: "/favorites", icon: Heart, minRole: "CHEF", group: "我的" },
   { title: "对话历史", href: "/history", icon: History, minRole: "CHEF", group: "我的" },
   { title: "控制台", href: "/admin", icon: LayoutDashboard, minRole: "ADMIN", group: "管理" },

@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HomeNav } from "@/components/home-nav";
 
 const FEATURES: { icon: LucideIcon; title: string; desc: string }[] = [
   { icon: MessageSquare, title: "RAG 对话", desc: "检索增强生成，菜谱知识库秒级问答" },
@@ -35,15 +36,7 @@ export default function Home() {
           CookManus
         </span>
         <div className="flex items-center gap-2">
-          <Button asChild variant="ghost" size="sm" className="cursor-pointer">
-            <Link href="/login">登录</Link>
-          </Button>
-          <Button asChild size="sm" className="cursor-pointer">
-            <Link href="/chat">
-              开始使用
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
+          <HomeNav />
         </div>
       </nav>
 

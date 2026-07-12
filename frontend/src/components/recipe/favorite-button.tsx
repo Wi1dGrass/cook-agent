@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Heart, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,12 +18,16 @@ export function FavoriteButton({
   initialFavorited?: boolean;
 }) {
   const user = useAuthStore((s) => s.user);
+  const router = useRouter();
   const [favorited, setFavorited] = React.useState(initialFavorited);
   const [loading, setLoading] = React.useState(false);
 
-  if (!user) return null;
-
   async function toggle() {
+    if (!user) {
+      toast.info("请先登录后再收藏");
+      router.push("/login");
+      return;
+    }
     setLoading(true);
     try {
       if (favorited) {

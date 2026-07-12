@@ -75,7 +75,7 @@ export default async function RecipeDetailPage({ params }: PageProps) {
             <p className="mt-2 text-sm text-muted-foreground">{detail.summary}</p>
           )}
         </div>
-        <FavoriteButton recipeId={detail.id} />
+        <FavoriteButton recipeId={detail.id} initialFavorited={!!detail.favorited} />
       </div>
 
       <Tabs defaultValue="detail" className="mt-6">

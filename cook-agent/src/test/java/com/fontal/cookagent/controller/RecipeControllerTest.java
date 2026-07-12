@@ -69,7 +69,7 @@ class RecipeControllerTest {
                 "经典红烧肉", null, null, "# 红烧肉\n...", "红烧肉.md",
                 List.of(new RecipeDetailResponse.IngredientInfo(1L, "五花肉", null, "500g", null)),
                 List.of(new RecipeDetailResponse.StepInfo(1, "五花肉切块焯水")),
-                LocalDateTime.now());
+                LocalDateTime.now(), false);
     }
 
     private static CategoryResponse sampleCategory() {

@@ -122,7 +122,7 @@ public class ZhipuAiEmbeddingModel implements EmbeddingModel {
 
     @Override
     public float[] embed(Document document) {
-        return new float[0];
+        return embed(document.getText());
     }
 
     @Override

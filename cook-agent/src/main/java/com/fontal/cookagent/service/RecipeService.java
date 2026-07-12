@@ -13,6 +13,7 @@ import com.fontal.cookagent.dto.RecipeSummaryResponse;
 import com.fontal.cookagent.dto.UpdateRecipeRequest;
 import com.fontal.cookagent.entity.*;
 import com.fontal.cookagent.mapper.*;
+import com.fontal.cookagent.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
@@ -39,6 +40,7 @@ public class RecipeService {
     private final CategoryMapper categoryMapper;
     private final IngredientMapper ingredientMapper;
     private final RecipeStepMapper recipeStepMapper;
+    private final FavoriteService favoriteService;
 
     // ==================== 搜索与推荐 ====================
 
@@ -48,7 +50,7 @@ public class RecipeService {
         var request = SearchRequest.builder()
                 .query(keyword)
                 .topK(k)
-                .similarityThreshold(0.5)
+                .similarityThreshold(0.3)
                 .build();
 
         List<Document> results = vectorStore.similaritySearch(request);
@@ -74,7 +76,7 @@ public class RecipeService {
         var request = SearchRequest.builder()
                 .query(criteria)
                 .topK(topK)
-                .similarityThreshold(0.4)
+                .similarityThreshold(0.2)
                 .build();
 
         List<Document> results = vectorStore.similaritySearch(request);
@@ -117,7 +119,15 @@ public class RecipeService {
                 new LambdaQueryWrapper<RecipeStep>().eq(RecipeStep::getRecipeId, id)
                         .orderByAsc(RecipeStep::getStepOrder));
 
-        return RecipeDetailResponse.from(recipe, ingredients, steps);
+        boolean favorited = false;
+        try {
+            Long userId = CurrentUser.requireUserId();
+            favorited = favoriteService.isFavorited(userId, id);
+        } catch (IllegalStateException ignored) {
+            // 未登录用户，favorited 保持 false
+        }
+
+        return RecipeDetailResponse.from(recipe, ingredients, steps, favorited);
     }
 
     /** 按名称模糊搜索菜谱 */

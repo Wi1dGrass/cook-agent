@@ -3,15 +3,14 @@ package com.fontal.cookagent.rag.etl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!pgvector")  // pgvector 下数据已在 PGVector 中，启动时无需重新导入
 public class EtlPipelineRunner implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(EtlPipelineRunner.class);
@@ -22,7 +21,8 @@ public class EtlPipelineRunner implements ApplicationRunner {
     private boolean autoStartup;
 
     @Autowired(required = false)
-    private JdbcTemplate jdbcTemplate;
+    @Qualifier("pgJdbcTemplate")
+    private JdbcTemplate pgJdbcTemplate;
 
     public EtlPipelineRunner(CookEtlPipeline etlPipeline) {
         this.etlPipeline = etlPipeline;
@@ -36,7 +36,7 @@ public class EtlPipelineRunner implements ApplicationRunner {
         }
 
         // PGVector 已有数据则跳过导入
-        if (jdbcTemplate != null && hasExistingData()) {
+        if (pgJdbcTemplate != null && hasExistingData()) {
             log.info("Vector store already has data, skipping ETL. Use POST /api/rag/etl/run to re-import.");
             return;
         }
@@ -51,7 +51,7 @@ public class EtlPipelineRunner implements ApplicationRunner {
 
     private boolean hasExistingData() {
         try {
-            Integer count = jdbcTemplate.queryForObject(
+            Integer count = pgJdbcTemplate.queryForObject(
                     "SELECT count(*) FROM vector_store", Integer.class);
             return count != null && count > 0;
         } catch (Exception e) {

@@ -2,13 +2,11 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppHeader } from "@/components/layout/app-header";
-import { AuthHydrator } from "@/components/auth-hydrator";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider defaultOpen>
-      <TooltipProvider delayDuration={200}>
-        <AuthHydrator />
+      <SidebarProvider defaultOpen>
+        <TooltipProvider delayDuration={200}>
         <AppSidebar />
         <SidebarInset>
           <AppHeader />

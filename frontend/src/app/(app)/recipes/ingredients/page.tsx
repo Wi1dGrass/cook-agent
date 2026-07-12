@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Carrot, Loader2 } from "lucide-react";
 
@@ -9,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { RecipeCardGrid } from "@/components/recipe/recipe-card";
 import { PageHeader, EmptyState, ErrorState } from "@/components/common/states";
 import { friendlyMessage, ApiError } from "@/lib/api/errors";
 
@@ -92,25 +92,27 @@ export default function IngredientsPage() {
                 找到 {data.count} 道菜（{data.matchMode === "all" ? "全部" : "任一"}匹配）
               </p>
               {data.results.map((r) => (
-                <Card key={r.recipe.id}>
-                  <CardContent className="flex items-center justify-between gap-3 py-3">
-                    <div>
-                      <p className="font-medium">{r.recipe.name}</p>
-                      {r.recipe.summary && (
-                        <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                          {r.recipe.summary}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap justify-end gap-1.5">
-                      {r.matchedIngredients.map((g) => (
-                        <Badge key={g} variant="secondary" className="cursor-default">
-                          {g}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                <Link key={r.recipe.id} href={`/recipes/${r.recipe.id}`} className="block cursor-pointer">
+                  <Card className="card-hover">
+                    <CardContent className="flex items-center justify-between gap-3 py-3">
+                      <div>
+                        <p className="font-medium">{r.recipe.name}</p>
+                        {r.recipe.summary && (
+                          <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                            {r.recipe.summary}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap justify-end gap-1.5">
+                        {r.matchedIngredients.map((g) => (
+                          <Badge key={g} variant="secondary" className="cursor-default">
+                            {g}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           ) : (

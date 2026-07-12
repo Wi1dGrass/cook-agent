@@ -23,7 +23,8 @@ public record RecipeDetailResponse(
         String sourceFile,
         List<IngredientInfo> ingredients,
         List<StepInfo> steps,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean favorited
 ) {
     public record IngredientInfo(
             Long id,
@@ -57,7 +58,27 @@ public record RecipeDetailResponse(
                 recipe.getSourceFile(),
                 ingredients.stream().map(IngredientInfo::from).toList(),
                 steps.stream().map(StepInfo::from).toList(),
-                recipe.getCreatedAt()
+                recipe.getCreatedAt(),
+                false
+        );
+    }
+
+    public static RecipeDetailResponse from(Recipe recipe, List<Ingredient> ingredients, List<RecipeStep> steps, boolean favorited) {
+        return new RecipeDetailResponse(
+                recipe.getId(),
+                recipe.getName(),
+                recipe.getCategoryId(),
+                recipe.getAlias(),
+                recipe.getImageUrl(),
+                recipe.getSummary(),
+                recipe.getRemark(),
+                recipe.getNutritionJson(),
+                recipe.getRawMarkdown(),
+                recipe.getSourceFile(),
+                ingredients.stream().map(IngredientInfo::from).toList(),
+                steps.stream().map(StepInfo::from).toList(),
+                recipe.getCreatedAt(),
+                favorited
         );
     }
 }

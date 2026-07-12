@@ -98,6 +98,17 @@ public class GlobalExceptionHandler {
                         HttpStatus.NOT_FOUND));
     }
 
+    /** 未登录或登录已过期 — CurrentUser.requireUserId() 抛出的 IllegalStateException */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex) {
+        log.warn("未登录或状态异常: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.of(ErrorCode.UNAUTHORIZED,
+                        ex.getMessage() != null ? ex.getMessage() : "未登录或登录已过期",
+                        HttpStatus.UNAUTHORIZED));
+    }
+
     /** 兜底：未捕获异常 */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception ex) {

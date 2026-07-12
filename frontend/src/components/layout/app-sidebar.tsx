@@ -101,15 +101,17 @@ export function AppSidebar() {
           {user ? (
             <SidebarMenuItem>
               <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm group-data-[collapsible=icon]:justify-center">
-                <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground text-xs font-medium">
-                  {user.username.slice(0, 1).toUpperCase()}
-                </div>
-                <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-                  <span className="truncate font-medium">{user.username}</span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    {ROLE_LABEL[user.role]}
-                  </span>
-                </div>
+                <Link href="/user/profile" className="flex items-center gap-2 cursor-pointer" aria-label="个人中心">
+                  <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground text-xs font-medium">
+                    {user.username.slice(0, 1).toUpperCase()}
+                  </div>
+                  <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                    <span className="truncate font-medium">{user.username}</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {ROLE_LABEL[user.role]}
+                    </span>
+                  </div>
+                </Link>
                 <Button
                   size="icon"
                   variant="ghost"

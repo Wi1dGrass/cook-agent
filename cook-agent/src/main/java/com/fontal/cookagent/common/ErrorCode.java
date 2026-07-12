@@ -10,6 +10,7 @@ public enum ErrorCode {
     PARAM_INVALID("PARAM_INVALID", "参数错误"),
     PARAM_MISSING("PARAM_MISSING", "缺少必填参数"),
     NOT_FOUND("NOT_FOUND", "资源不存在"),
+    UNAUTHORIZED("UNAUTHORIZED", "未登录或登录已过期"),
     METHOD_NOT_ALLOWED("METHOD_NOT_ALLOWED", "请求方法不支持"),
     INTERNAL_ERROR("INTERNAL_ERROR", "服务器内部错误"),
 
