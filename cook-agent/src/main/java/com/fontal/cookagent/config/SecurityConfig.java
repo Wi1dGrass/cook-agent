@@ -1,6 +1,7 @@
 package com.fontal.cookagent.config;
 
 import com.fontal.cookagent.security.JwtAuthFilter;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -35,6 +36,8 @@ public class SecurityConfig {
                 .cors(cors -> {})
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // SSE / Async 完成时 Tomcat 的 async dispatch 放行（避免已提交响应后 AuthorizationFilter 拒绝）
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                         // Knife4j / Swagger 资源放行
                         .requestMatchers(
                                 "/doc.html", "/swagger-ui/**", "/v3/api-docs/**",
